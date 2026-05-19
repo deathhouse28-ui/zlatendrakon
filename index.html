@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Златен Дракон – Китайски Ресторант | Варна</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Ma+Shan+Zheng&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --gold:   #FFD700;
+      --gold2:  #FFA500;
+      --red:    #C41E3A;
+      --dark:   #0a0000;
+      --darker: #050000;
+      --light:  #fff8f0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--darker);
+      color: var(--light);
+      font-family: 'Noto Serif', serif;
+      overflow-x: hidden;
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--darker); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+    /* ─── CANVAS (Three.js) ─── */
+    #bg-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      padding: 18px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(5,0,0,.95) 0%, transparent 100%);
+      transition: background .4s;
+    }
+    nav.scrolled {
+      background: rgba(5,0,0,.96);
+      box-shadow: 0 2px 30px rgba(196,30,58,.3);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .nav-logo .dragon-icon {
+      font-size: 2rem; filter: drop-shadow(0 0 8px var(--gold));
+      animation: float 3s ease-in-out infinite;
+    }
+    .nav-logo span {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold), var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+    }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a {
+      color: var(--light); text-decoration: none;
+      font-size: .85rem; letter-spacing: 2px; text-transform: uppercase;
+      position: relative; padding-bottom: 4px;
+      transition: color .3s;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: 0; left: 0;
+      width: 0; height: 1px; background: var(--gold);
+      transition: width .35s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ─── HERO ─── */
+    #hero {
+      position: relative; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; z-index: 1;
+      overflow: hidden;
+    }
+
+    /* lanterns */
+    .lanterns {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%; pointer-events: none; z-index: 2;
+    }
+    .lantern {
+      position: absolute; top: -120px;
+      animation: sway 4s ease-in-out infinite;
+    }
+    .lantern:nth-child(1)  { left:  5%; animation-delay: 0s;   animation-duration: 3.8s; }
+    .lantern:nth-child(2)  { left: 15%; animation-delay: .5s;  animation-duration: 4.2s; }
+    .lantern:nth-child(3)  { left: 28%; animation-delay: 1s;   animation-duration: 3.5s; }
+    .lantern:nth-child(4)  { left: 42%; animation-delay: .3s;  animation-duration: 4.5s; }
+    .lantern:nth-child(5)  { left: 58%; animation-delay: .8s;  animation-duration: 3.9s; }
+    .lantern:nth-child(6)  { left: 70%; animation-delay: 1.3s; animation-duration: 4.1s; }
+    .lantern:nth-child(7)  { left: 82%; animation-delay: .6s;  animation-duration: 3.7s; }
+    .lantern:nth-child(8)  { left: 93%; animation-delay: .2s;  animation-duration: 4.3s; }
+
+    .lantern-body {
+      width: 28px; height: 44px;
+      background: radial-gradient(ellipse at 40% 35%, #ff6b00 0%, #c41e3a 60%, #6b0011 100%);
+      border-radius: 50% 50% 40% 40%;
+      box-shadow: 0 0 18px 6px rgba(255,100,0,.65),
+                  0 0 40px 12px rgba(196,30,58,.3);
+      position: relative;
+      animation: lanternGlow 2s ease-in-out infinite alternate;
+    }
+    .lantern-body::before {
+      content: '';
+      position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+      width: 4px; height: 12px; background: var(--gold);
+    }
+    .lantern-body::after {
+      content: '';
+      position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+      width: 2px; height: 14px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+    }
+    .lantern-fringe {
+      display: flex; justify-content: center; gap: 3px; margin-top: 0;
+    }
+    .lantern-fringe span {
+      display: block; width: 2px; height: 10px;
+      background: var(--gold);
+      border-radius: 1px;
+    }
+
+    @keyframes sway {
+      0%,100% { transform: rotate(-6deg) translateY(0); }
+      50%      { transform: rotate(6deg)  translateY(8px); }
+    }
+    @keyframes lanternGlow {
+      from { box-shadow: 0 0 18px 6px rgba(255,100,0,.65), 0 0 40px 12px rgba(196,30,58,.3); }
+      to   { box-shadow: 0 0 28px 10px rgba(255,140,0,.9), 0 0 60px 20px rgba(196,30,58,.5); }
+    }
+
+    /* hero text */
+    .hero-content { position: relative; z-index: 3; }
+
+    .hero-chinese {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: clamp(3.5rem, 10vw, 9rem);
+      background: linear-gradient(135deg, #fff6c0, var(--gold), var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(255,180,0,.5));
+      animation: shimmer 4s linear infinite;
+      background-size: 200% 200%;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 6vw, 5rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), #fff6c0, var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: 6px;
+      text-shadow: none;
+      filter: drop-shadow(0 0 20px rgba(255,200,0,.4));
+      margin-bottom: 8px;
+    }
+    .hero-sub {
+      font-size: 1rem; letter-spacing: 6px; text-transform: uppercase;
+      color: rgba(255,215,0,.7);
+      margin-bottom: 40px;
+    }
+
+    .hero-divider {
+      display: flex; align-items: center; gap: 16px;
+      justify-content: center; margin-bottom: 40px;
+    }
+    .hero-divider .line {
+      height: 1px; width: 80px;
+      background: linear-gradient(to right, transparent, var(--gold));
+    }
+    .hero-divider .line:last-child {
+      background: linear-gradient(to left, transparent, var(--gold));
+    }
+    .hero-divider .diamond {
+      width: 8px; height: 8px; background: var(--gold);
+      transform: rotate(45deg);
+      box-shadow: 0 0 10px var(--gold);
+    }
+
+    .hero-btns { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+
+    .btn-primary {
+      padding: 16px 40px;
+      background: linear-gradient(135deg, var(--red), #8b0000);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: .85rem; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; text-decoration: none;
+      position: relative; overflow: hidden;
+      transition: all .3s;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute; top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,.3), transparent);
+      transition: left .5s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 30px rgba(196,30,58,.8); transform: translateY(-2px); }
+    .btn-primary:hover::before { left: 100%; }
+
+    .btn-outline {
+      padding: 16px 40px;
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid rgba(255,215,0,.5);
+      font-family: 'Cinzel', serif;
+      font-size: .85rem; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; text-decoration: none;
+      transition: all .3s;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    }
+    .btn-outline:hover {
+      background: rgba(255,215,0,.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(255,215,0,.3);
+      transform: translateY(-2px);
+    }
+
+    .scroll-indicator {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: rgba(255,215,0,.5); font-size: .7rem; letter-spacing: 3px;
+      text-transform: uppercase; z-index: 3;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    .scroll-indicator .arrow {
+      width: 20px; height: 20px;
+      border-right: 1px solid var(--gold);
+      border-bottom: 1px solid var(--gold);
+      transform: rotate(45deg);
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%      { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ─── SECTION BASE ─── */
+    section { position: relative; z-index: 1; padding: 100px 48px; }
+
+    .section-header {
+      text-align: center; margin-bottom: 70px;
+    }
+    .section-tag {
+      font-size: .7rem; letter-spacing: 5px; text-transform: uppercase;
+      color: var(--gold2); margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold), #fff6c0);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+    .section-line {
+      display: flex; align-items: center; gap: 12px; justify-content: center;
+    }
+    .section-line .l { height: 1px; width: 60px; background: var(--gold); opacity: .5; }
+    .section-line .d {
+      width: 6px; height: 6px; background: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    /* ─── ABOUT ─── */
+    #about { background: linear-gradient(135deg, rgba(10,0,0,.9) 0%, rgba(30,5,5,.9) 100%); }
+
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center; max-width: 1100px; margin: 0 auto;
+    }
+
+    .about-visual {
+      position: relative;
+    }
+    .about-img-frame {
+      position: relative;
+      width: 100%; aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #1a0505, #2d0a0a);
+      border: 1px solid rgba(255,215,0,.2);
+      overflow: hidden;
+      transform: perspective(800px) rotateY(-8deg);
+      transition: transform .6s;
+      box-shadow: 20px 20px 60px rgba(0,0,0,.7), -5px -5px 30px rgba(196,30,58,.1);
+    }
+    .about-img-frame:hover { transform: perspective(800px) rotateY(0deg); }
+
+    .about-img-frame .inner {
+      width: 100%; height: 100%;
+      background:
+        radial-gradient(ellipse at 30% 40%, rgba(196,30,58,.3) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 60%, rgba(255,165,0,.15) 0%, transparent 50%),
+        linear-gradient(135deg, #1a0505 0%, #0d0101 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10rem;
+      filter: drop-shadow(0 0 40px rgba(255,165,0,.4));
+    }
+    .about-img-frame::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFD700' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .about-badge {
+      position: absolute; bottom: -20px; right: -20px;
+      width: 90px; height: 90px;
+      background: linear-gradient(135deg, var(--red), #8b0000);
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      box-shadow: 0 0 30px rgba(196,30,58,.6);
+      z-index: 5;
+    }
+    .about-badge .num {
+      font-family: 'Cinzel', serif; font-size: 1.6rem; font-weight: 900;
+      color: var(--gold); line-height: 1;
+    }
+    .about-badge .lbl {
+      font-size: .5rem; letter-spacing: 1px; color: rgba(255,215,0,.8);
+      text-transform: uppercase; text-align: center;
+    }
+
+    .about-text h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem; color: var(--gold);
+      margin-bottom: 20px;
+    }
+    .about-text p {
+      color: rgba(255,248,240,.75);
+      line-height: 1.9; margin-bottom: 20px;
+      font-size: .95rem;
+    }
+    .about-stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 20px; margin-top: 30px;
+    }
+    .stat-box {
+      text-align: center; padding: 20px 10px;
+      border: 1px solid rgba(255,215,0,.15);
+      background: rgba(196,30,58,.05);
+      transition: all .3s;
+    }
+    .stat-box:hover {
+      border-color: var(--gold);
+      background: rgba(196,30,58,.15);
+      transform: translateY(-4px);
+    }
+    .stat-box .val {
+      font-family: 'Cinzel', serif; font-size: 2rem;
+      color: var(--gold); font-weight: 700;
+    }
+    .stat-box .lbl {
+      font-size: .7rem; color: rgba(255,248,240,.6);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    /* ─── MENU ─── */
+    #menu { background: var(--darker); }
+
+    .menu-tabs {
+      display: flex; gap: 8px; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 50px;
+    }
+    .tab-btn {
+      padding: 10px 28px;
+      background: transparent;
+      border: 1px solid rgba(255,215,0,.25);
+      color: rgba(255,248,240,.6);
+      font-family: 'Cinzel', serif;
+      font-size: .8rem; letter-spacing: 2px;
+      cursor: pointer; transition: all .3s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: linear-gradient(135deg, var(--red), #8b0000);
+      border-color: var(--gold);
+      color: var(--gold);
+      box-shadow: 0 0 20px rgba(196,30,58,.4);
+    }
+
+    .menu-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px; max-width: 1200px; margin: 0 auto;
+    }
+    .menu-card {
+      background: linear-gradient(135deg, rgba(20,3,3,.9), rgba(10,0,0,.95));
+      border: 1px solid rgba(255,215,0,.1);
+      padding: 0;
+      overflow: hidden;
+      transition: all .4s;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+    .menu-card:hover {
+      border-color: rgba(255,215,0,.4);
+      transform: translateY(-8px) rotateX(2deg);
+      box-shadow: 0 20px 50px rgba(0,0,0,.6), 0 0 30px rgba(196,30,58,.2);
+    }
+    .menu-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, var(--red), var(--gold), var(--red));
+      transform: scaleX(0);
+      transition: transform .4s;
+    }
+    .menu-card:hover::before { transform: scaleX(1); }
+
+    .menu-card-emoji {
+      width: 100%; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4rem;
+      background: linear-gradient(135deg, rgba(196,30,58,.15), rgba(30,5,5,.8));
+      border-bottom: 1px solid rgba(255,215,0,.08);
+      transition: transform .4s;
+    }
+    .menu-card:hover .menu-card-emoji { transform: scale(1.1); }
+
+    .menu-card-body { padding: 20px; }
+    .menu-card-body h4 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem; color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .menu-card-body p {
+      font-size: .82rem; color: rgba(255,248,240,.55);
+      line-height: 1.7; margin-bottom: 16px;
+    }
+    .menu-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .menu-price {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--gold2);
+    }
+    .menu-tag {
+      font-size: .65rem; letter-spacing: 2px;
+      padding: 4px 10px; border: 1px solid rgba(196,30,58,.5);
+      color: rgba(255,100,50,.8); text-transform: uppercase;
+    }
+
+    .menu-panel { display: none; }
+    .menu-panel.active { display: block; }
+
+    /* ─── SPECIALS ─── */
+    #specials {
+      background: linear-gradient(135deg, rgba(20,0,0,.95) 0%, rgba(5,0,0,.98) 100%);
+    }
+
+    .specials-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 30px; max-width: 1100px; margin: 0 auto;
+    }
+
+    .special-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, rgba(30,5,5,.9), rgba(10,0,0,.95));
+      border: 1px solid rgba(255,215,0,.12);
+      padding: 40px 30px;
+      text-align: center;
+      transition: all .4s;
+      transform-style: preserve-3d;
+      perspective: 600px;
+    }
+    .special-card:hover {
+      transform: translateY(-10px) rotateX(3deg) rotateY(-2deg);
+      border-color: var(--gold);
+      box-shadow: 0 30px 60px rgba(0,0,0,.7), 0 0 40px rgba(196,30,58,.3);
+    }
+    .special-card .glow-orb {
+      position: absolute;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196,30,58,.3) 0%, transparent 70%);
+      top: -40px; right: -40px;
+      transition: all .4s;
+    }
+    .special-card:hover .glow-orb {
+      background: radial-gradient(circle, rgba(255,165,0,.4) 0%, transparent 70%);
+    }
+    .special-icon { font-size: 3.5rem; margin-bottom: 20px; display: block; }
+    .special-card h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem; color: var(--gold);
+      margin-bottom: 14px; letter-spacing: 1px;
+    }
+    .special-card p {
+      font-size: .85rem; color: rgba(255,248,240,.6);
+      line-height: 1.8;
+    }
+
+    /* ─── REVIEWS ─── */
+    #reviews { background: var(--darker); }
+
+    .reviews-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+      gap: 24px; max-width: 1100px; margin: 0 auto;
+    }
+    .review-card {
+      background: linear-gradient(135deg, rgba(20,3,3,.8), rgba(10,0,0,.9));
+      border: 1px solid rgba(255,215,0,.1);
+      padding: 30px;
+      transition: all .4s;
+    }
+    .review-card:hover {
+      border-color: rgba(255,215,0,.35);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0,0,0,.5);
+    }
+    .review-stars { color: var(--gold); font-size: 1.1rem; margin-bottom: 14px; }
+    .review-text {
+      font-size: .9rem; color: rgba(255,248,240,.7);
+      line-height: 1.8; font-style: italic; margin-bottom: 20px;
+    }
+    .review-author {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .review-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--red), #8b0000);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; border: 1px solid rgba(255,215,0,.3);
+    }
+    .review-name {
+      font-family: 'Cinzel', serif; font-size: .85rem; color: var(--gold);
+    }
+    .review-date { font-size: .7rem; color: rgba(255,248,240,.4); }
+
+    .rating-hero {
+      text-align: center; margin-bottom: 60px;
+    }
+    .big-rating {
+      font-family: 'Cinzel', serif; font-size: 5rem; font-weight: 900;
+      color: var(--gold); line-height: 1;
+      filter: drop-shadow(0 0 20px rgba(255,215,0,.4));
+    }
+    .rating-stars { font-size: 2rem; color: var(--gold); margin: 10px 0; }
+    .rating-count { font-size: .85rem; color: rgba(255,248,240,.5); letter-spacing: 2px; }
+
+    /* ─── CONTACT ─── */
+    #contact {
+      background: linear-gradient(135deg, rgba(15,2,2,.97), rgba(5,0,0,.99));
+    }
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; max-width: 1100px; margin: 0 auto;
+    }
+    .contact-info h3 {
+      font-family: 'Cinzel', serif; font-size: 1.5rem;
+      color: var(--gold); margin-bottom: 30px;
+    }
+    .contact-item {
+      display: flex; gap: 16px; align-items: flex-start;
+      margin-bottom: 28px;
+    }
+    .contact-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--red), #8b0000);
+      border: 1px solid rgba(255,215,0,.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .contact-detail .lbl {
+      font-size: .65rem; letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,215,0,.6); margin-bottom: 4px;
+    }
+    .contact-detail .val {
+      font-size: .95rem; color: var(--light);
+    }
+    .contact-detail a { color: var(--light); text-decoration: none; }
+    .contact-detail a:hover { color: var(--gold); }
+
+    .map-frame {
+      width: 100%; height: 100%; min-height: 400px;
+      background: linear-gradient(135deg, rgba(20,3,3,.8), rgba(10,0,0,.9));
+      border: 1px solid rgba(255,215,0,.2);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      font-size: 3rem; color: rgba(255,215,0,.4);
+      position: relative; overflow: hidden;
+    }
+    .map-frame::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='1' fill='%23FFD700' fill-opacity='.15'/%3E%3C/svg%3E") repeat;
+    }
+    .map-frame p { font-size: .9rem; color: rgba(255,248,240,.5); z-index: 1; }
+    .map-frame .map-pin { z-index: 1; animation: float 2s ease-in-out infinite; }
+    .map-link {
+      z-index: 1;
+      padding: 12px 28px;
+      background: var(--red);
+      color: var(--gold); text-decoration: none;
+      font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: 2px;
+      border: 1px solid rgba(255,215,0,.3);
+      transition: all .3s;
+    }
+    .map-link:hover { background: #8b0000; box-shadow: 0 0 20px rgba(196,30,58,.6); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      position: relative; z-index: 1;
+      background: #030000;
+      border-top: 1px solid rgba(255,215,0,.1);
+      padding: 50px 48px 30px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+    .footer-links {
+      display: flex; gap: 32px; justify-content: center;
+      list-style: none; margin-bottom: 30px; flex-wrap: wrap;
+    }
+    .footer-links a {
+      color: rgba(255,248,240,.4); text-decoration: none;
+      font-size: .8rem; letter-spacing: 2px; text-transform: uppercase;
+      transition: color .3s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy {
+      font-size: .75rem; color: rgba(255,248,240,.25); letter-spacing: 1px;
+    }
+    .footer-socials {
+      display: flex; gap: 16px; justify-content: center; margin-bottom: 30px;
+    }
+    .social-btn {
+      width: 42px; height: 42px;
+      border: 1px solid rgba(255,215,0,.25);
+      background: rgba(196,30,58,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; cursor: pointer;
+      transition: all .3s; text-decoration: none;
+    }
+    .social-btn:hover {
+      background: var(--red);
+      border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(196,30,58,.5);
+    }
+
+    /* ─── GLOBAL ANIMATIONS ─── */
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    .fade-up {
+      opacity: 0; transform: translateY(40px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      section { padding: 70px 20px; }
+      .about-grid { grid-template-columns: 1fr; }
+      .specials-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- THREE.JS canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">
+    <span class="dragon-icon">🐉</span>
+    <span>Златен Дракон</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#about">За нас</a></li>
+    <li><a href="#menu">Меню</a></li>
+    <li><a href="#specials">Специалитети</a></li>
+    <li><a href="#reviews">Отзиви</a></li>
+    <li><a href="#contact">Контакти</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="lanterns">
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+    <div class="lantern"><div class="lantern-body"></div><div class="lantern-fringe"><span></span><span></span><span></span></div></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-chinese">金龍飯店</div>
+    <h1 class="hero-title">Златен Дракон</h1>
+    <p class="hero-sub">Китайски Ресторант · Варна</p>
+    <div class="hero-divider">
+      <div class="line"></div>
+      <div class="diamond"></div>
+      <div class="line"></div>
+    </div>
+    <div class="hero-btns">
+      <a href="#menu" class="btn-primary">Разгледай Менюто</a>
+      <a href="#contact" class="btn-outline">Резервация</a>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>Скролни</span>
+    <div class="arrow"></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-header fade-up">
+    <p class="section-tag">Нашата история</p>
+    <h2 class="section-title">Автентична Китайска Кухня</h2>
+    <div class="section-line"><div class="l"></div><div class="d"></div><div class="l"></div></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-visual fade-up">
+      <div class="about-img-frame">
+        <div class="inner">🐉</div>
+      </div>
+      <div class="about-badge">
+        <div class="num">3.9</div>
+        <div class="lbl">Google<br/>оценка</div>
+      </div>
+    </div>
+    <div class="about-text fade-up">
+      <h3>Добре дошли в Златен Дракон</h3>
+      <p>Ресторант „Златен Дракон" е едно от най-известните китайски заведения във Варна. Предлагаме богата селекция от автентични азиатски ястия, приготвени по традиционни рецепти с пресни продукти.</p>
+      <p>От хрупкава патица до прясно приготвена риба Shanghai, всяко ястие носи истинския дух на китайската кухня. Посетете ни за обяд или вечеря – две удобни локации в сърцето на Варна ви очакват.</p>
+      <div class="about-stats">
+        <div class="stat-box">
+          <div class="val">907+</div>
+          <div class="lbl">Отзива</div>
+        </div>
+        <div class="stat-box">
+          <div class="val">2</div>
+          <div class="lbl">Локации</div>
+        </div>
+        <div class="stat-box">
+          <div class="val">60+</div>
+          <div class="lbl">Ястия</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MENU -->
+<section id="menu">
+  <div class="section-header fade-up">
+    <p class="section-tag">Кулинарно изкуство</p>
+    <h2 class="section-title">Нашето Меню</h2>
+    <div class="section-line"><div class="l"></div><div class="d"></div><div class="l"></div></div>
+  </div>
+
+  <div class="menu-tabs">
+    <button class="tab-btn active" onclick="showTab('appetizers',this)">Предястия</button>
+    <button class="tab-btn" onclick="showTab('soups',this)">Супи</button>
+    <button class="tab-btn" onclick="showTab('mains',this)">Основни</button>
+    <button class="tab-btn" onclick="showTab('seafood',this)">Морски</button>
+    <button class="tab-btn" onclick="showTab('rice',this)">Ориз & Нудли</button>
+    <button class="tab-btn" onclick="showTab('desserts',this)">Десерти</button>
+  </div>
+
+  <!-- APPETIZERS -->
+  <div id="tab-appetizers" class="menu-panel active">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🥟</div>
+        <div class="menu-card-body">
+          <h4>Пролетни Рула</h4>
+          <p>Хрупкави рула с зеленчуци и месо по класическа китайска рецепта</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">4.00 лв</span>
+            <span class="menu-tag">Класика</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍖</div>
+        <div class="menu-card-body">
+          <h4>Пържени Свински Ребра</h4>
+          <p>Сочни ребра с традиционни азиатски подправки</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">9.00 лв</span>
+            <span class="menu-tag">Популярно</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🥦</div>
+        <div class="menu-card-body">
+          <h4>Панирани Зеленчуци</h4>
+          <p>Хрупкаво панирани пресни зеленчуци, поднесени с кисело-сладък сос</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">4.30 лв</span>
+            <span class="menu-tag">Вегетарианско</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍞</div>
+        <div class="menu-card-body">
+          <h4>Пържен Чесново Хляб</h4>
+          <p>Хрупкав хляб с ароматен чесън и пикантни подправки</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">1.80 лв</span>
+            <span class="menu-tag">Гарнитура</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOUPS -->
+  <div id="tab-soups" class="menu-panel">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍜</div>
+        <div class="menu-card-body">
+          <h4>Мисо Рамен</h4>
+          <p>Нудли, яйце, кайма, черни гъби, зелен лук в богат рамен бульон</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">8.00 лв</span>
+            <span class="menu-tag">Специалитет</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🌶️</div>
+        <div class="menu-card-body">
+          <h4>Люто-Кисела Супа</h4>
+          <p>Традиционна китайска супа с баланс от кисело и люто, с тофу и гъби</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">5.50 лв</span>
+            <span class="menu-tag">Класика</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🦐</div>
+        <div class="menu-card-body">
+          <h4>Супа с Морски Дарове</h4>
+          <p>Богата супа с скариди, калмари и риба в ароматен бульон</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">8.00 лв</span>
+            <span class="menu-tag">Деликатес</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🥬</div>
+        <div class="menu-card-body">
+          <h4>Зеленчукова Супа</h4>
+          <p>Лека и ароматна супа с пресни сезонни зеленчуци</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">3.00 лв</span>
+            <span class="menu-tag">Вегетарианско</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAINS -->
+  <div id="tab-mains" class="menu-panel">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🦆</div>
+        <div class="menu-card-body">
+          <h4>Хрупкава Патица</h4>
+          <p>Фино приготвена патица с хрупкава кожа и соев сос по Пекински стил</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">14.40 лв</span>
+            <span class="menu-tag">Специалитет</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🐔</div>
+        <div class="menu-card-body">
+          <h4>Пиле с Асорти Зеленчуци</h4>
+          <p>Сочно пилешко месо пържено с пресни зеленчуци в ароматен сос</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">9.00 лв</span>
+            <span class="menu-tag">Популярно</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🥩</div>
+        <div class="menu-card-body">
+          <h4>Говеждо в Стридов Сос</h4>
+          <p>Деликатни парчета говеждо в богат стридов сос с броколи</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">13.30 лв</span>
+            <span class="menu-tag">Деликатес</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🐸</div>
+        <div class="menu-card-body">
+          <h4>Бутчета Жаба</h4>
+          <p>Деликатес — крака на жаба в ароматна марината с чесън и джинджифил</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">22.30 лв</span>
+            <span class="menu-tag">Шеф Препоръка</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEAFOOD -->
+  <div id="tab-seafood" class="menu-panel">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🐟</div>
+        <div class="menu-card-body">
+          <h4>Риба Shanghai</h4>
+          <p>Свежа риба по рецепта Shanghai с джинджифил, соев сос и пресни билки</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">17.40 лв</span>
+            <span class="menu-tag">Специалитет</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🦑</div>
+        <div class="menu-card-body">
+          <h4>Калмари в Люти Подправки</h4>
+          <p>Пресни калмари пържени с люти чушки, чесън и ароматни подправки</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">12.90 лв</span>
+            <span class="menu-tag">Популярно</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🦐</div>
+        <div class="menu-card-body">
+          <h4>Скариди с Чесън</h4>
+          <p>Едри тигрови скариди в масло с чесън и лимон</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">15.50 лв</span>
+            <span class="menu-tag">Деликатес</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🐡</div>
+        <div class="menu-card-body">
+          <h4>Червена Запечена Риба</h4>
+          <p>Традиционна червена риба в специален соев маринат</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">14.50 лв</span>
+            <span class="menu-tag">Класика</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RICE & NOODLES -->
+  <div id="tab-rice" class="menu-panel">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍚</div>
+        <div class="menu-card-body">
+          <h4>Пържен Ориз с Яйце</h4>
+          <p>Класически китайски пържен ориз с яйце, моркови и грах</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">6.70 лв</span>
+            <span class="menu-tag">Класика</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍝</div>
+        <div class="menu-card-body">
+          <h4>Ориз Нудли с Пиле</h4>
+          <p>Тънки ориз нудли с пиле, зеленчуци и соев сос</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">8.50 лв</span>
+            <span class="menu-tag">Популярно</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍛</div>
+        <div class="menu-card-body">
+          <h4>Патица на Ориз</h4>
+          <p>Патешко месо в соев сос, поднесено на легло от бял ориз</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">9.90 лв</span>
+            <span class="menu-tag">Специалитет</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🥢</div>
+        <div class="menu-card-body">
+          <h4>Нудли с Морски Дарове</h4>
+          <p>Яйчени нудли с микс от морски дарове в ароматен бульон</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">9.90 лв</span>
+            <span class="menu-tag">Деликатес</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESSERTS -->
+  <div id="tab-desserts" class="menu-panel">
+    <div class="menu-grid">
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍌</div>
+        <div class="menu-card-body">
+          <h4>Пържени Банани</h4>
+          <p>Карамелизирани банани в хрупкаво тесто с мед</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">3.80 лв</span>
+            <span class="menu-tag">Любимец</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍍</div>
+        <div class="menu-card-body">
+          <h4>Пържен Ананас</h4>
+          <p>Сочни парчета ананас с карамелена коричка и захарна нишка</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">4.00 лв</span>
+            <span class="menu-tag">Екзотично</span>
+          </div>
+        </div>
+      </div>
+      <div class="menu-card fade-up">
+        <div class="menu-card-emoji">🍨</div>
+        <div class="menu-card-body">
+          <h4>Пържен Сладолед</h4>
+          <p>Уникален десерт — сладолед в хрупкава панировка</p>
+          <div class="menu-card-footer">
+            <span class="menu-price">4.50 лв</span>
+            <span class="menu-tag">Специалитет</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALS -->
+<section id="specials">
+  <div class="section-header fade-up">
+    <p class="section-tag">Защо ние</p>
+    <h2 class="section-title">Нашите Предимства</h2>
+    <div class="section-line"><div class="l"></div><div class="d"></div><div class="l"></div></div>
+  </div>
+  <div class="specials-grid">
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">👨‍🍳</span>
+      <h3>Автентична Рецептура</h3>
+      <p>Нашите готвачи следват традиционни китайски рецепти, предавани от поколение на поколение. Всяко ястие е произведение на изкуството.</p>
+    </div>
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">🌿</span>
+      <h3>Пресни Съставки</h3>
+      <p>Използваме само пресни, качествени продукти. Морските дарове пристигат ежедневно, а зеленчуците са от местни доставчици.</p>
+    </div>
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">🏮</span>
+      <h3>Уникална Атмосфера</h3>
+      <p>Потопете се в автентичната китайска атмосфера — от декора до музиката. Идеалното място за романтична вечеря или семейно тържество.</p>
+    </div>
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">⏰</span>
+      <h3>Удобно Работно Време</h3>
+      <p>Отворени всеки ден от 11:00 до 23:30. Разполагаме с две локации в Центъра на Варна за ваше удобство.</p>
+    </div>
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">🚗</span>
+      <h3>Доставка до Дома</h3>
+      <p>Поръчайте онлайн и вземете любимите си ястия на доставка или на място. Достъпни сме в order.bg, Wolt и Takeaway.</p>
+    </div>
+    <div class="special-card fade-up">
+      <div class="glow-orb"></div>
+      <span class="special-icon">🍱</span>
+      <h3>Бизнес Обяд</h3>
+      <p>Специално бизнес меню от 11:00 до 15:30 — вкусно, бързо и на достъпна цена. Включва супа и хляб.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section id="reviews">
+  <div class="section-header fade-up">
+    <p class="section-tag">Мнения на клиенти</p>
+    <h2 class="section-title">Какво Казват Гостите</h2>
+    <div class="section-line"><div class="l"></div><div class="d"></div><div class="l"></div></div>
+  </div>
+  <div class="rating-hero fade-up">
+    <div class="big-rating">3.9</div>
+    <div class="rating-stars">★★★★☆</div>
+    <div class="rating-count">Базирано на 907+ отзива в Google</div>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card fade-up">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Невероятна храна! Хрупкавата патица е абсолютно задължителна. Обслужването е любезно и бързо. Ще се върна определено!"</p>
+      <div class="review-author">
+        <div class="review-avatar">👤</div>
+        <div>
+          <div class="review-name">Мария П.</div>
+          <div class="review-date">Google Review</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card fade-up">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Най-доброто китайско в града! Пролетните рула са фантастични, а рамен супата е безподобна. Атмосферата е страхотна."</p>
+      <div class="review-author">
+        <div class="review-avatar">👤</div>
+        <div>
+          <div class="review-name">Иван Г.</div>
+          <div class="review-date">Google Review</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card fade-up">
+      <div class="review-stars">★★★★☆</div>
+      <p class="review-text">"Много добра храна на разумни цени. Морските дарове са пресни и вкусно приготвени. Препоръчвам рибата Shanghai!"</p>
+      <div class="review-author">
+        <div class="review-avatar">👤</div>
+        <div>
+          <div class="review-name">Стефан Н.</div>
+          <div class="review-date">Google Review</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-header fade-up">
+    <p class="section-tag">Елате при нас</p>
+    <h2 class="section-title">Намерете Ни</h2>
+    <div class="section-line"><div class="l"></div><div class="d"></div><div class="l"></div></div>
+  </div>
+  <div class="contact-grid">
+    <div class="contact-info fade-up">
+      <h3>Ресторант 1 – Одесос</h3>
+      <div class="contact-item">
+        <div class="contact-icon">📍</div>
+        <div class="contact-detail">
+          <div class="lbl">Адрес</div>
+          <div class="val">ул. „Петко Ю. Тодоров" 68, Варна Център</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">📞</div>
+        <div class="contact-detail">
+          <div class="lbl">Телефон</div>
+          <div class="val"><a href="tel:052635855">052 635 855</a> / <a href="tel:0886673778">0886 673 778</a></div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">⏰</div>
+        <div class="contact-detail">
+          <div class="lbl">Работно Време</div>
+          <div class="val">Всеки ден: 11:00 – 23:30</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">📍</div>
+        <div class="contact-detail">
+          <div class="lbl">Ресторант 2</div>
+          <div class="val">ул. „Царевец" 38, Варна<br/><a href="tel:0877829292">0877 829 292</a></div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">🌐</div>
+        <div class="contact-detail">
+          <div class="lbl">Онлайн Поръчки</div>
+          <div class="val"><a href="https://zlatendrakon.bg" target="_blank">zlatendrakon.bg</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="map-frame fade-up">
+      <div class="map-pin" style="font-size:4rem">📍</div>
+      <p>Варна Център, ул. „Петко Ю. Тодоров" 68</p>
+      <a class="map-link" href="https://maps.google.com/?q=Zlatendrakon+Varna+Petko+Todorov+68" target="_blank">
+        Отвори в Google Maps
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">金龍飯店</div>
+  <div class="footer-socials">
+    <a class="social-btn" href="https://www.facebook.com/zlatendrakonbg/" target="_blank">📘</a>
+    <a class="social-btn" href="https://zlatendrakon.bg" target="_blank">🌐</a>
+    <a class="social-btn" href="tel:052635855">📞</a>
+  </div>
+  <ul class="footer-links">
+    <li><a href="#about">За нас</a></li>
+    <li><a href="#menu">Меню</a></li>
+    <li><a href="#specials">Специалитети</a></li>
+    <li><a href="#reviews">Отзиви</a></li>
+    <li><a href="#contact">Контакти</a></li>
+  </ul>
+  <p class="footer-copy">© 2024 Златен Дракон | Китайски Ресторант – Варна</p>
+</footer>
+
+<!-- SCRIPTS -->
+<script>
+// ── THREE.JS: Floating golden particles ──
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 80;
+
+  // Particles
+  const count = 350;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3]     = (Math.random() - 0.5) * 200;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+
+    const t = Math.random();
+    if (t < 0.5) {
+      colors[i * 3] = 1; colors[i * 3 + 1] = 0.84; colors[i * 3 + 2] = 0;
+    } else {
+      colors[i * 3] = 0.77; colors[i * 3 + 1] = 0.12; colors[i * 3 + 2] = 0.23;
+    }
+    sizes[i] = Math.random() * 2 + 0.5;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.PointsMaterial({
+    size: 1.2,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.55,
+    sizeAttenuation: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+
+  // Dragon ring
+  const ringGeo = new THREE.TorusGeometry(30, 0.3, 8, 80);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xFFD700, transparent: true, opacity: 0.12,
+    wireframe: true
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 3;
+  scene.add(ring);
+
+  const ring2Geo = new THREE.TorusGeometry(45, 0.2, 8, 80);
+  const ring2Mat = new THREE.MeshBasicMaterial({
+    color: 0xC41E3A, transparent: true, opacity: 0.08,
+    wireframe: true
+  });
+  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2.rotation.x = -Math.PI / 4;
+  ring2.rotation.y = Math.PI / 6;
+  scene.add(ring2);
+
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', e => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 0.3;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 0.3;
+  });
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.004;
+    points.rotation.y = t * 0.08 + mouseX;
+    points.rotation.x = mouseY * 0.5;
+    ring.rotation.z  = t * 0.12;
+    ring2.rotation.z = -t * 0.07;
+    ring.rotation.x  = Math.PI / 3 + Math.sin(t * 0.3) * 0.1;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// ── NAV scroll ──
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ── Menu tabs ──
+function showTab(id, btn) {
+  document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  // re-trigger animations
+  document.querySelectorAll('#tab-' + id + ' .fade-up').forEach((el, i) => {
+    el.classList.remove('visible');
+    setTimeout(() => el.classList.add('visible'), i * 80);
+  });
+}
+
+// ── Intersection Observer: fade-up ──
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e, idx) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), 80);
+      io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+
+// ── 3D tilt on menu cards (mouse) ──
+document.querySelectorAll('.menu-card, .special-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width  - 0.5;
+    const y = (e.clientY - r.top)  / r.height - 0.5;
+    card.style.transform = `perspective(600px) rotateY(${x * 14}deg) rotateX(${-y * 10}deg) translateY(-6px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+</script>
+</body>
+</html>
